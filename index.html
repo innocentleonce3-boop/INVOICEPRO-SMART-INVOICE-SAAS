@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#f4f6f2">
+	<title>Ledgerline | Invoices</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--ink: #18231f;
+			--muted: #78827d;
+			--paper: #ffffff;
+			--canvas: #f4f6f2;
+			--line: #e5eae5;
+			--green: #176b53;
+			--green-dark: #104b3b;
+			--green-soft: #e8f2ec;
+			--yellow: #f3cc67;
+			--red: #b54d45;
+			--shadow: 0 18px 50px rgba(31, 50, 41, .09);
+		}
+		* { box-sizing: border-box; }
+		body { margin: 0; color: var(--ink); background: var(--canvas); font-family: "Aptos", "Segoe UI", sans-serif; font-size: 14px; }
+		button, input, select, textarea { font: inherit; }
+		button { color: inherit; cursor: pointer; }
+		button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #449679; outline-offset: 2px; }
+		button:disabled { cursor: not-allowed; opacity: .5; }
+		.app { min-height: 100vh; display: grid; grid-template-columns: 236px minmax(0, 1fr); }
+		.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 27px 16px 18px; background: #fbfcfa; border-right: 1px solid var(--line); }
+		.brand { display: flex; align-items: center; gap: 11px; padding: 0 12px; margin-bottom: 39px; }
+		.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; color: #fff; background: var(--green); font-family: Georgia, serif; font-size: 22px; }
+		.brand-name { font-family: Georgia, serif; font-size: 19px; letter-spacing: 0; }
+		.nav-label { padding: 0 12px; margin: 0 0 9px; color: #98a19b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; }
+		.nav { display: grid; gap: 4px; }
+		.nav button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 0; border-radius: 5px; color: #68736d; background: transparent; text-align: left; transition: color .15s ease, background .15s ease; }
+		.nav button:hover { color: var(--ink); background: #f0f3ef; }
+		.nav button.active { color: var(--green-dark); background: var(--green-soft); font-weight: 650; }
+		.nav-icon { width: 18px; color: inherit; font-size: 16px; text-align: center; }
+		.sidebar-bottom { margin-top: auto; }
+		.storage-note { display: flex; gap: 9px; padding: 14px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
+		.storage-dot { flex: 0 0 7px; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: #61a47c; }
+		.profile { display: flex; align-items: center; gap: 10px; padding: 12px; border-top: 1px solid var(--line); }
+		.avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--green-dark); background: #e8eee9; font-size: 11px; font-weight: 700; }
+		.profile-name { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+		.profile-caption { margin-top: 3px; color: var(--muted); font-size: 10px; }
+		.main { min-width: 0; }
+		.topbar { height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 42px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.68); }
+		.breadcrumb { color: var(--muted); font-size: 12px; }
+		.topbar-right { display: flex; align-items: center; gap: 14px; }
+		.today { color: var(--muted); font-size: 12px; }
+		.content { max-width: 1440px; padding: 36px 42px 60px; margin: 0 auto; }
+		.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+		h1, h2, h3, p { margin-top: 0; }
+		h1 { margin-bottom: 6px; font-family: Georgia, "Times New Roman", serif; font-size: 31px; font-weight: 500; letter-spacing: 0; }
+		.subtitle { margin: 0; color: var(--muted); font-size: 13px; }
+		.primary, .secondary, .quiet, .danger-button { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid transparent; border-radius: 5px; font-size: 12px; font-weight: 650; transition: background .15s ease, transform .15s ease; }
+		.primary { color: #fff; background: var(--green); }
+		.primary:hover { background: var(--green-dark); }
+		.secondary { border-color: var(--line); background: #fff; }
+		.secondary:hover, .quiet:hover { background: #f3f6f2; }
+		.quiet { min-height: 34px; padding: 0 10px; color: var(--muted); background: transparent; }
+		.danger-button { color: var(--red); background: #fff4f2; }
+		.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 25px; }
+		.kpi { min-width: 0; padding: 19px 20px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+		.kpi-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+		.kpi-label span:last-child { color: #9da7a1; font-size: 16px; }
+		.kpi-value { overflow: hidden; margin: 15px 0 5px; font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+		.kpi-foot { color: #8b958f; font-size: 10px; }
+		.panel { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+		.panel-head { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 20px; border-bottom: 1px solid var(--line); }
+		.panel-title { margin: 0; font-family: Georgia, serif; font-size: 17px; font-weight: 500; }
+		.panel-tools { display: flex; align-items: center; gap: 10px; }
+		.search { width: 225px; height: 35px; padding: 0 11px 0 33px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); background: #fff; }
+		.search-wrap { position: relative; }
+		.search-icon { position: absolute; top: 9px; left: 11px; color: #89938d; }
+		.filters { display: flex; align-items: center; gap: 3px; padding: 12px 20px 0; overflow-x: auto; }
+		.filter { min-height: 31px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; color: #7c8781; background: transparent; font-size: 11px; white-space: nowrap; }
+		.filter.active { border-bottom-color: var(--green); color: var(--green-dark); font-weight: 700; }
+		.table-scroll { overflow-x: auto; }
+		table { width: 100%; border-collapse: collapse; text-align: left; }
+		th { padding: 12px 20px; color: #98a19b; font-size: 10px; font-weight: 650; letter-spacing: .55px; text-transform: uppercase; white-space: nowrap; }
+		td { padding: 15px 20px; border-top: 1px solid #edf0ec; color: #48554e; font-size: 12px; white-space: nowrap; }
+		tbody tr { transition: background .12s ease; }
+		tbody tr:hover { background: #fafcf9; }
+		.click-row { cursor: pointer; }
+		.cell-strong { color: var(--ink); font-weight: 650; }
+		.cell-sub { display: block; margin-top: 4px; color: #98a19b; font-size: 10px; }
+		.amount { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 650; text-align: right; }
+		.status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 3px; font-size: 10px; font-weight: 650; text-transform: capitalize; }
+		.status::before { width: 5px; height: 5px; border-radius: 50%; background: currentColor; content: ""; }
+		.status.paid { color: #397655; background: #eaf4ec; }
+		.status.sent { color: #9b6a15; background: #fbf2dd; }
+		.status.draft { color: #68756e; background: #eef1ee; }
+		.status.overdue { color: #a34c44; background: #f9e9e7; }
+		.row-actions { display: flex; justify-content: flex-end; gap: 5px; }
+		.icon-button { width: 30px; height: 30px; display: inline-grid; place-items: center; border: 0; border-radius: 4px; color: #748078; background: transparent; font-size: 15px; }
+		.icon-button:hover { color: var(--ink); background: #edf1ed; }
+		.empty { padding: 52px 20px; color: var(--muted); text-align: center; }
+		.empty strong { display: block; margin-bottom: 7px; color: var(--ink); font-family: Georgia, serif; font-size: 18px; font-weight: 500; }
+		.two-column { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr); gap: 18px; }
+		.summary-list { padding: 6px 20px 12px; }
+		.summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid #edf0ec; font-size: 12px; }
+		.summary-row:last-child { border-bottom: 0; }
+		.summary-row span:first-child { color: var(--muted); }
+		.summary-row strong { font-variant-numeric: tabular-nums; }
+		.bar-list { display: grid; gap: 16px; padding: 20px; }
+		.bar-meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #68736d; font-size: 11px; }
+		.bar-track { height: 6px; overflow: hidden; border-radius: 9px; background: #eef1ee; }
+		.bar-fill { height: 100%; border-radius: inherit; background: #459274; }
+		.client-card { display: flex; align-items: center; gap: 10px; }
+		.client-initial { width: 31px; height: 31px; display: grid; flex: 0 0 31px; place-items: center; border-radius: 50%; color: #3c705b; background: #eaf1eb; font-size: 10px; font-weight: 700; }
+		.settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; }
+		.settings-nav { display: grid; align-content: start; gap: 4px; }
+		.settings-nav button { padding: 11px 12px; border: 0; border-radius: 4px; color: #718078; background: transparent; text-align: left; }
+		.settings-nav button.active { color: var(--green-dark); background: var(--green-soft); font-weight: 650; }
+		.settings-panel { padding: 24px; }
+		.settings-panel h2 { margin-bottom: 5px; font-family: Georgia, serif; font-size: 20px; font-weight: 500; }
+		.settings-panel > p { margin-bottom: 23px; color: var(--muted); font-size: 12px; }
+		.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+		.field { min-width: 0; display: grid; gap: 7px; }
+		.field.full { grid-column: 1 / -1; }
+		.field label { color: #58645d; font-size: 11px; font-weight: 650; }
+		.field input, .field select, .field textarea { width: 100%; min-width: 0; min-height: 38px; padding: 9px 10px; border: 1px solid #dfe5df; border-radius: 4px; color: var(--ink); background: #fff; }
+		.field textarea { min-height: 72px; resize: vertical; }
+		.field-hint { color: #8a948e; font-size: 10px; }
+		.settings-actions { display: flex; justify-content: flex-end; padding-top: 20px; margin-top: 22px; border-top: 1px solid var(--line); }
+		.overlay { position: fixed; z-index: 5; inset: 0; display: none; place-items: center; padding: 20px; background: rgba(22, 34, 29, .48); }
+		.overlay.open { display: grid; }
+		.dialog { width: min(100%, 880px); max-height: min(92vh, 940px); display: flex; flex-direction: column; overflow: hidden; border-radius: 7px; background: #f7f9f6; box-shadow: var(--shadow); animation: appear .18s ease-out; }
+		.dialog.small { width: min(100%, 500px); }
+		.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 17px 22px; border-bottom: 1px solid var(--line); background: #fff; }
+		.dialog-head h2 { margin: 0; font-family: Georgia, serif; font-size: 20px; font-weight: 500; }
+		.dialog-head p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+		.dialog-body { overflow-y: auto; padding: 22px; }
+		.dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid var(--line); background: #fff; }
+		.footer-right { display: flex; gap: 8px; }
+		.form-section { padding: 18px; margin-bottom: 13px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+		.form-section:last-child { margin-bottom: 0; }
+		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+		.section-heading h3 { margin: 0; font-size: 12px; font-weight: 700; }
+		.invoice-top-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+		.item-head, .item-row { display: grid; grid-template-columns: minmax(170px, 1fr) 90px 110px 115px 30px; align-items: center; gap: 8px; }
+		.item-head { padding: 0 0 9px; color: #929d96; font-size: 9px; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
+		.item-row { padding: 9px 0; border-top: 1px solid #edf0ec; }
+		.item-row input { width: 100%; min-width: 0; height: 35px; padding: 7px 8px; border: 1px solid #e1e6e1; border-radius: 3px; font-size: 11px; }
+		.item-row input[type="number"] { text-align: right; }
+		.line-total { overflow: hidden; font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+		.item-remove { width: 28px; height: 28px; border: 0; border-radius: 3px; color: #9a6a65; background: transparent; font-size: 15px; }
+		.item-remove:hover { background: #fff0ee; }
+		.add-line { margin-top: 11px; }
+		.totals-wrap { display: flex; justify-content: flex-end; }
+		.totals { width: min(100%, 300px); }
+		.total-row { display: flex; justify-content: space-between; gap: 14px; padding: 8px 0; color: #748078; font-size: 11px; }
+		.total-row strong { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+		.total-row.grand { padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--line); color: var(--ink); font-size: 14px; font-weight: 700; }
+		.total-row.grand strong { color: var(--green-dark); font-size: 17px; }
+		.toast { position: fixed; z-index: 10; right: 24px; bottom: 24px; max-width: min(360px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 5px; color: white; background: #233b31; box-shadow: var(--shadow); font-size: 12px; animation: appear .18s ease-out; }
+		#clientOverlay .dialog-body { padding: 22px; }
+		@keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+		@media (max-width: 980px) {
+			.app { grid-template-columns: 72px minmax(0, 1fr); }
+			.sidebar { align-items: center; padding: 20px 8px 12px; }
+			.brand { padding: 0; margin-bottom: 34px; }
+			.brand-name, .nav-label, .nav-text, .storage-note, .profile-info { display: none; }
+			.nav { width: 100%; }
+			.nav button { justify-content: center; padding: 12px 0; }
+			.nav-icon { width: auto; }
+			.profile { justify-content: center; padding: 13px 0 0; }
+			.topbar { padding: 0 25px; }
+			.content { padding: 30px 25px 50px; }
+		}
+		@media (max-width: 720px) {
+			.app { display: block; padding-bottom: 62px; }
+			.sidebar { position: fixed; z-index: 4; inset: auto 0 0; width: 100%; height: 62px; flex-direction: row; justify-content: center; padding: 5px 8px; border-top: 1px solid var(--line); border-right: 0; background: #fff; }
+			.brand, .sidebar-bottom { display: none; }
+			.nav { width: min(100%, 420px); display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+			.nav button { min-height: 50px; flex-direction: column; gap: 2px; padding: 4px 2px; font-size: 9px; }
+			.nav-text { display: inline; }
+			.nav-icon { font-size: 16px; }
+			.topbar { height: 58px; padding: 0 17px; }
+			.topbar-right { gap: 8px; }
+			.today { display: none; }
+			.content { padding: 25px 16px 36px; }
+			h1 { font-size: 27px; }
+			.page-heading { align-items: flex-start; margin-bottom: 20px; }
+			.page-heading .primary { width: 40px; min-width: 40px; padding: 0; overflow: hidden; font-size: 0; }
+			.page-heading .primary span { font-size: 19px; }
+			.kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 16px; }
+			.kpi { padding: 14px; }
+			.kpi-value { margin: 12px 0 4px; font-size: 21px; }
+			.two-column { grid-template-columns: 1fr; }
+			.panel-head { align-items: flex-start; flex-direction: column; }
+			.panel-tools { width: 100%; }
+			.search-wrap, .search { width: 100%; }
+			th, td { padding-right: 13px; padding-left: 13px; }
+			.filters { padding-right: 12px; padding-left: 12px; }
+			.settings-layout { grid-template-columns: 1fr; gap: 12px; }
+			.settings-nav { grid-template-columns: repeat(2, 1fr); }
+			.settings-panel { padding: 18px; }
+			.invoice-top-fields { grid-template-columns: 1fr 1fr; }
+			.invoice-top-fields .field:first-child { grid-column: 1 / -1; }
+			.dialog { max-height: 96vh; }
+			.dialog-body { padding: 13px; }
+			.form-section { padding: 13px; }
+			.item-head, .item-row { grid-template-columns: minmax(115px, 1fr) 48px 72px 76px 24px; gap: 5px; }
+			.item-head { font-size: 8px; }
+			.item-row input { padding: 6px 5px; font-size: 10px; }
+			.line-total { font-size: 10px; }
+			.dialog-footer { align-items: stretch; padding: 11px 13px; }
+			.dialog-footer > .quiet { display: none; }
+			.footer-right { width: 100%; }
+			.footer-right button { flex: 1; padding: 0 8px; font-size: 11px; }
+		}
+		@media (max-width: 380px) {
+			.item-head, .item-row { grid-template-columns: minmax(96px, 1fr) 42px 61px 66px 22px; gap: 4px; }
+			.item-head { letter-spacing: 0; }
+			.form-grid { grid-template-columns: 1fr; }
+			.field.full { grid-column: auto; }
+		}
+		@media print {
+			@page { margin: 16mm; size: A4; }
+			body { background: #fff !important; }
+			body * { visibility: hidden !important; }
+			#printSheet, #printSheet * { visibility: visible !important; }
+			#printSheet { position: absolute; inset: 0 auto auto 0; width: 100%; color: #18231f; background: #fff; font-family: Arial, sans-serif; }
+			.print-head { display: flex; justify-content: space-between; gap: 30px; padding-bottom: 32px; border-bottom: 2px solid #176b53; }
+			.print-brand { color: #176b53; font-family: Georgia, serif; font-size: 29px; }
+			.print-invoice-title { margin-top: 5px; color: #78827d; font-size: 12px; letter-spacing: 1.3px; text-align: right; text-transform: uppercase; }
+			.print-invoice-number { margin-top: 7px; font-size: 19px; font-weight: bold; text-align: right; }
+			.print-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 28px 0; }
+			.print-label { margin-bottom: 9px; color: #78827d; font-size: 9px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+			.print-party-name { margin-bottom: 6px; font-size: 14px; font-weight: bold; }
+			.print-party-lines { color: #56625b; font-size: 11px; line-height: 1.7; white-space: pre-line; }
+			.print-meta { margin-top: 15px; color: #56625b; font-size: 10px; line-height: 1.8; }
+			.print-meta strong { color: #18231f; }
+			.print-table { margin: 4px 0 24px; }
+			.print-table th { padding: 11px 8px; color: #fff; background: #176b53; font-size: 9px; text-align: left; }
+			.print-table td { padding: 12px 8px; border-bottom: 1px solid #e5eae5; font-size: 10px; white-space: normal; }
+			.print-table .print-right { text-align: right; }
+			.print-bottom { display: grid; grid-template-columns: 1fr 250px; gap: 30px; }
+			.print-notes { color: #56625b; font-size: 10px; line-height: 1.6; white-space: pre-line; }
+			.print-totals div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; color: #56625b; font-size: 10px; }
+			.print-totals .print-grand { margin-top: 5px; padding-top: 12px; border-top: 1px solid #b9c7be; color: #18231f; font-size: 14px; font-weight: bold; }
+			.print-thanks { margin-top: 55px; padding-top: 15px; border-top: 1px solid #e5eae5; color: #78827d; font-size: 10px; text-align: center; }
+		}
+	</style>
+</head>
+<body>
+	<div class="app">
+		<aside class="sidebar">
+			<div class="brand"><div class="brand-mark">L</div><span class="brand-name">Ledgerline</span></div>
+			<p class="nav-label">Workspace</p>
+			<nav class="nav" aria-label="Main navigation">
+				<button class="active" type="button" data-view="dashboard"><span class="nav-icon">⌂</span><span class="nav-text">Overview</span></button>
+				<button type="button" data-view="invoices"><span class="nav-icon">▤</span><span class="nav-text">Invoices</span></button>
+				<button type="button" data-view="clients"><span class="nav-icon">♙</span><span class="nav-text">Clients</span></button>
+				<button type="button" data-view="settings"><span class="nav-icon">⚙</span><span class="nav-text">Settings</span></button>
+			</nav>
+			<div class="sidebar-bottom">
+				<div class="storage-note"><span class="storage-dot"></span><span>Your data is saved in this browser. Export a backup from Settings.</span></div>
+				<div class="profile"><div class="avatar" id="profileAvatar">LL</div><div class="profile-info"><div class="profile-name" id="profileName">Your business</div><div class="profile-caption">Workspace owner</div></div></div>
+			</div>
+		</aside>
+		<main class="main">
+			<header class="topbar"><div class="breadcrumb" id="breadcrumb">Workspace / Overview</div><div class="topbar-right"><span class="today" id="today"></span><button class="icon-button" type="button" title="Business settings" aria-label="Business settings" data-go-settings>⚙</button></div></header>
+			<div class="content" id="content"></div>
+		</main>
+	</div>
+	<div class="overlay" id="invoiceOverlay" role="dialog" aria-modal="true" aria-labelledby="invoiceDialogTitle">
+		<div class="dialog">
+			<div class="dialog-head"><div><h2 id="invoiceDialogTitle">New invoice</h2><p>Fill in the details. Your changes are saved when you choose an action below.</p></div><button class="icon-button" type="button" aria-label="Close" data-close-invoice>×</button></div>
+			<div class="dialog-body">
+				<form id="invoiceForm">
+					<section class="form-section"><div class="section-heading"><h3>Invoice details</h3></div>
+						<div class="invoice-top-fields">
+							<div class="field"><label for="invoiceClient">Bill to</label><select id="invoiceClient" required></select></div>
+							<div class="field"><label for="invoiceNumber">Invoice number</label><input id="invoiceNumber" required maxlength="30"></div>
+							<div class="field"><label for="invoiceCurrency">Currency</label><select id="invoiceCurrency"><option value="USD">USD · US Dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · Pound</option><option value="CAD">CAD · Canadian Dollar</option><option value="AUD">AUD · Australian Dollar</option><option value="XOF">XOF · CFA Franc</option><option value="NGN">NGN · Naira</option><option value="KES">KES · Kenyan Shilling</option></select></div>
+							<div class="field"><label for="invoiceDate">Issue date</label><input id="invoiceDate" type="date" required></div>
+							<div class="field"><label for="invoiceDue">Due date</label><input id="invoiceDue" type="date" required></div>
+							<div class="field"><label for="invoiceStatus">Status</label><select id="invoiceStatus"><option value="draft">Draft</option><option value="sent">Sent</option><option value="paid">Paid</option></select></div>
+						</div>
+					</section>
+					<section class="form-section"><div class="section-heading"><h3>Line items</h3></div>
+						<div class="item-head"><span>Description</span><span style="text-align:right">Qty</span><span style="text-align:right">Rate</span><span style="text-align:right">Amount</span><span></span></div>
+						<div id="invoiceItems"></div>
+						<button class="quiet add-line" type="button" id="addLine">＋ Add line item</button>
+					</section>
+					<section class="form-section"><div class="section-heading"><h3>Totals &amp; notes</h3></div>
+						<div class="form-grid">
+							<div class="field"><label for="invoiceTax">Tax rate (%)</label><input id="invoiceTax" type="number" min="0" max="100" step="0.01" value="0"></div>
+							<div class="field"><label for="invoiceDiscount">Discount (%)</label><input id="invoiceDiscount" type="number" min="0" max="100" step="0.01" value="0"></div>
+							<div class="field full"><label for="invoiceNotes">Notes / payment instructions</label><textarea id="invoiceNotes" placeholder="Payment terms, bank details, or a thank-you note"></textarea></div>
+						</div>
+						<div class="totals-wrap"><div class="totals"><div class="total-row"><span>Subtotal</span><strong id="editorSubtotal">$0.00</strong></div><div class="total-row"><span id="editorDiscountLabel">Discount</span><strong id="editorDiscount">−$0.00</strong></div><div class="total-row"><span id="editorTaxLabel">Tax</span><strong id="editorTax">$0.00</strong></div><div class="total-row grand"><span>Total</span><strong id="editorTotal">$0.00</strong></div></div></div>
+					</section>
+				</form>
+			</div>
+			<div class="dialog-footer"><button class="quiet" type="button" id="deleteInvoice" hidden>Delete invoice</button><div class="footer-right"><button class="secondary" type="button" data-close-invoice>Cancel</button><button class="secondary" type="button" data-save="draft">Save draft</button><button class="primary" type="button" data-save="sent">Save invoice</button></div></div>
+		</div>
+	</div>
+	<div class="overlay" id="clientOverlay" role="dialog" aria-modal="true" aria-labelledby="clientDialogTitle">
+		<div class="dialog small">
+			<div class="dialog-head"><div><h2 id="clientDialogTitle">Add client</h2><p>Keep contact details ready for your next invoice.</p></div><button class="icon-button" type="button" aria-label="Close" data-close-client>×</button></div>
+			<div class="dialog-body"><form id="clientForm"><div class="form-grid">
+				<div class="field full"><label for="clientName">Client or company name *</label><input id="clientName" required maxlength="100" autocomplete="organization"></div>
+				<div class="field"><label for="clientEmail">Email</label><input id="clientEmail" type="email" autocomplete="email"></div>
+				<div class="field"><label for="clientPhone">Phone</label><input id="clientPhone" type="tel" autocomplete="tel"></div>
+				<div class="field full"><label for="clientAddress">Billing address</label><textarea id="clientAddress" autocomplete="street-address"></textarea></div>
+			</div></form></div>
+			<div class="dialog-footer"><span></span><div class="footer-right"><button class="secondary" type="button" data-close-client>Cancel</button><button class="primary" type="button" id="saveClient">Save client</button></div></div>
+		</div>
+	</div>
+	<div id="printSheet" aria-hidden="true"></div>
+	<div id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+	<script>
+		const STORAGE_KEY = "ledgerline.invoice-system.v1";
+		const todayISO = () => new Date().toLocaleDateString("en-CA");
+		const datePlusDays = (days) => { const date = new Date(); date.setDate(date.getDate() + days); return date.toLocaleDateString("en-CA"); };
+		const escapeHTML = (value = "") => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+		const defaultState = { business: { name: "", email: "", phone: "", address: "", taxId: "", currency: "USD", prefix: "INV" }, clients: [], invoices: [], nextNumber: 1001 };
+		let state = loadState();
+		let activeView = "dashboard";
+		let activeFilter = "all";
+		let editingInvoiceId = null;
+		let toastTimer;
+		const content = document.querySelector("#content");
+		const invoiceOverlay = document.querySelector("#invoiceOverlay");
+		const clientOverlay = document.querySelector("#clientOverlay");
+
+		function loadState() {
+			try {
+				const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+				return saved ? { ...defaultState, ...saved, business: { ...defaultState.business, ...saved.business }, clients: saved.clients || [], invoices: saved.invoices || [] } : structuredClone(defaultState);
+			} catch { return structuredClone(defaultState); }
+		}
+		function persist() {
+			try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }
+			catch { showToast("Could not save. Browser storage may be full or unavailable."); return false; }
+		}
+		function showToast(message) {
+			const region = document.querySelector("#toastRegion");
+			region.innerHTML = `<div class="toast">${escapeHTML(message)}</div>`;
+			clearTimeout(toastTimer);
+			toastTimer = setTimeout(() => { region.innerHTML = ""; }, 3000);
+		}
+		function currencyFormat(amount, currency = state.business.currency || "USD") {
+			try { return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 2 }).format(Number(amount) || 0); }
+			catch { return `${currency} ${(Number(amount) || 0).toFixed(2)}`; }
+		}
+		function invoiceTotal(invoice) { return Number(invoice.total) || 0; }
+		function invoiceStatus(invoice) {
+			if (invoice.status === "paid" || invoice.status === "draft") return invoice.status;
+			return invoice.dueDate && invoice.dueDate < todayISO() ? "overdue" : "sent";
+		}
+		function initials(name) { return String(name || "LL").trim().split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase() || "LL"; }
+		function displayDate(value) {
+			if (!value) return "—";
+			const date = new Date(`${value}T12:00:00`);
+			return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(date);
+		}
+		function currentClient(invoice) { return state.clients.find((client) => client.id === invoice.clientId) || invoice.clientSnapshot || {}; }
+		function setView(view) {
+			activeView = view;
+			document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+			const labels = { dashboard: "Overview", invoices: "Invoices", clients: "Clients", settings: "Settings" };
+			document.querySelector("#breadcrumb").textContent = `Workspace / ${labels[view] || "Overview"}`;
+			renderView();
+		}
+		function renderView() {
+			if (activeView === "dashboard") renderDashboard();
+			else if (activeView === "invoices") renderInvoices();
+			else if (activeView === "clients") renderClients();
+			else renderSettings();
+		}
+		function pageHeader(title, subtitle, action = "") {
+			return `<div class="page-heading"><div><h1>${title}</h1><p class="subtitle">${subtitle}</p></div>${action}</div>`;
+		}
+		function renderDashboard() {
+			const thisMonth = todayISO().slice(0, 7);
+			const monthInvoices = state.invoices.filter((invoice) => (invoice.issueDate || "").startsWith(thisMonth));
+			const paidMonth = monthInvoices.filter((invoice) => invoice.status === "paid").reduce((sum, invoice) => sum + invoiceTotal(invoice), 0);
+			const outstanding = state.invoices.filter((invoice) => ["sent", "overdue"].includes(invoiceStatus(invoice))).reduce((sum, invoice) => sum + invoiceTotal(invoice), 0);
+			const overdue = state.invoices.filter((invoice) => invoiceStatus(invoice) === "overdue");
+			const average = state.invoices.length ? state.invoices.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0) / state.invoices.length : 0;
+			const latest = [...state.invoices].sort((a, b) => (b.issueDate || "").localeCompare(a.issueDate || "")).slice(0, 5);
+			const action = `<button class="primary" type="button" data-new-invoice><span>＋</span> New invoice</button>`;
+			content.innerHTML = `${pageHeader("Good ${greeting()}, ${escapeHTML(state.business.name || "there")}", "Here’s what’s happening with your invoices.", action)}
+				<div class="kpis">
+					<div class="kpi"><div class="kpi-label">Collected this month <span>↗</span></div><div class="kpi-value">${currencyFormat(paidMonth)}</div><div class="kpi-foot">${monthInvoices.filter((invoice) => invoice.status === "paid").length} paid invoices</div></div>
+					<div class="kpi"><div class="kpi-label">Outstanding <span>◷</span></div><div class="kpi-value">${currencyFormat(outstanding)}</div><div class="kpi-foot">${state.invoices.filter((invoice) => ["sent", "overdue"].includes(invoiceStatus(invoice))).length} awaiting payment</div></div>
+					<div class="kpi"><div class="kpi-label">Overdue invoices <span>!</span></div><div class="kpi-value">${overdue.length}</div><div class="kpi-foot">${currencyFormat(overdue.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0))} past due</div></div>
+					<div class="kpi"><div class="kpi-label">Average invoice <span>⌁</span></div><div class="kpi-value">${currencyFormat(average)}</div><div class="kpi-foot">Across ${state.invoices.length} total invoices</div></div>
+				</div>
+				<div class="two-column"><section class="panel"><div class="panel-head"><h2 class="panel-title">Recent invoices</h2><button class="quiet" type="button" data-go-view="invoices">View all →</button></div>${latest.length ? `<div class="table-scroll"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Status</th><th class="amount">Amount</th></tr></thead><tbody>${latest.map(invoiceRow).join("")}</tbody></table></div>` : emptyMarkup("No invoices yet", "Create your first invoice to see it here.", "New invoice", "data-new-invoice")}</section>
+				<section class="panel"><div class="panel-head"><h2 class="panel-title">At a glance</h2></div><div class="summary-list"><div class="summary-row"><span>Total invoices</span><strong>${state.invoices.length}</strong></div><div class="summary-row"><span>Drafts</span><strong>${state.invoices.filter((invoice) => invoice.status === "draft").length}</strong></div><div class="summary-row"><span>Sent / overdue</span><strong>${state.invoices.filter((invoice) => ["sent", "overdue"].includes(invoiceStatus(invoice))).length}</strong></div><div class="summary-row"><span>Paid</span><strong>${state.invoices.filter((invoice) => invoice.status === "paid").length}</strong></div><div class="summary-row"><span>Clients</span><strong>${state.clients.length}</strong></div></div></section></div>`;
+			bindContentEvents();
+		}
+		function greeting() { const hour = new Date().getHours(); return hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"; }
+		function emptyMarkup(title, detail, buttonText = "", attribute = "") {
+			return `<div class="empty"><strong>${title}</strong>${detail}${buttonText ? `<div style="margin-top:17px"><button class="secondary" type="button" ${attribute}>${buttonText}</button></div>` : ""}</div>`;
+		}
+		function invoiceRow(invoice) {
+			const client = currentClient(invoice);
+			const status = invoiceStatus(invoice);
+			return `<tr class="click-row" data-edit-invoice="${escapeHTML(invoice.id)}"><td><span class="cell-strong">${escapeHTML(invoice.number)}</span><span class="cell-sub">Issued ${displayDate(invoice.issueDate)}</span></td><td><span class="cell-strong">${escapeHTML(client.name || "Unknown client")}</span><span class="cell-sub">${escapeHTML(client.email || "")}</span></td><td>${displayDate(invoice.dueDate)}</td><td><span class="status ${status}">${status}</span></td><td class="amount">${currencyFormat(invoiceTotal(invoice), invoice.currency)}</td></tr>`;
+		}
+		function renderInvoices() {
+			const action = `<button class="primary" type="button" data-new-invoice><span>＋</span> New invoice</button>`;
+			content.innerHTML = `${pageHeader("Invoices", "Create, track, and follow up on every payment.", action)}<section class="panel"><div class="panel-head"><h2 class="panel-title">All invoices <span style="color:#98a19b;font:11px sans-serif">${state.invoices.length}</span></h2><div class="panel-tools"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search" id="invoiceSearch" type="search" placeholder="Search invoices or clients" aria-label="Search invoices or clients"></div></div></div><div class="filters" role="group" aria-label="Filter invoices">${["all", "draft", "sent", "overdue", "paid"].map((filter) => `<button class="filter ${activeFilter === filter ? "active" : ""}" type="button" data-filter="${filter}">${filter[0].toUpperCase() + filter.slice(1)} <span>${filterCount(filter)}</span></button>`).join("")}</div><div id="invoiceTableArea"></div></section>`;
+			renderInvoiceTable();
+			bindContentEvents();
+			document.querySelector("#invoiceSearch").addEventListener("input", renderInvoiceTable);
+		}
+		function filterCount(filter) { return filter === "all" ? state.invoices.length : state.invoices.filter((invoice) => invoiceStatus(invoice) === filter).length; }
+		function renderInvoiceTable() {
+			const search = (document.querySelector("#invoiceSearch")?.value || "").trim().toLowerCase();
+			const rows = [...state.invoices].filter((invoice) => (activeFilter === "all" || invoiceStatus(invoice) === activeFilter)).filter((invoice) => `${invoice.number} ${currentClient(invoice).name || ""} ${currentClient(invoice).email || ""}`.toLowerCase().includes(search)).sort((a, b) => (b.issueDate || "").localeCompare(a.issueDate || ""));
+			const area = document.querySelector("#invoiceTableArea");
+			if (!area) return;
+			area.innerHTML = rows.length ? `<div class="table-scroll"><table><thead><tr><th>Invoice</th><th>Client</th><th>Due date</th><th>Status</th><th class="amount">Amount</th><th></th></tr></thead><tbody>${rows.map((invoice) => { const client = currentClient(invoice); const status = invoiceStatus(invoice); return `<tr><td class="click-row" data-edit-invoice="${escapeHTML(invoice.id)}"><span class="cell-strong">${escapeHTML(invoice.number)}</span><span class="cell-sub">Issued ${displayDate(invoice.issueDate)}</span></td><td><span class="cell-strong">${escapeHTML(client.name || "Unknown client")}</span><span class="cell-sub">${escapeHTML(client.email || "")}</span></td><td>${displayDate(invoice.dueDate)}</td><td><span class="status ${status}">${status}</span></td><td class="amount">${currencyFormat(invoiceTotal(invoice), invoice.currency)}</td><td><div class="row-actions"><button class="icon-button" type="button" title="Print invoice" aria-label="Print ${escapeHTML(invoice.number)}" data-print-invoice="${escapeHTML(invoice.id)}">⎙</button>${invoice.status !== "paid" ? `<button class="icon-button" type="button" title="Mark paid" aria-label="Mark ${escapeHTML(invoice.number)} as paid" data-mark-paid="${escapeHTML(invoice.id)}">✓</button>` : ""}<button class="icon-button" type="button" title="Edit invoice" aria-label="Edit ${escapeHTML(invoice.number)}" data-edit-invoice="${escapeHTML(invoice.id)}">✎</button></div></td></tr>`; }).join("")}</tbody></table></div>` : emptyMarkup(search || activeFilter !== "all" ? "No matching invoices" : "No invoices yet", search || activeFilter !== "all" ? "Try a different search or filter." : "Create an invoice and keep your billing in one place.", search || activeFilter !== "all" ? "" : "Create invoice", search || activeFilter !== "all" ? "" : "data-new-invoice");
+			bindDynamicEvents(area);
+		}
+		function renderClients() {
+			const rows = [...state.clients].sort((a, b) => a.name.localeCompare(b.name));
+			const action = `<button class="primary" type="button" data-new-client><span>＋</span> Add client</button>`;
+			content.innerHTML = `${pageHeader("Clients", "Your client directory and billing contacts.", action)}<section class="panel"><div class="panel-head"><h2 class="panel-title">All clients <span style="color:#98a19b;font:11px sans-serif">${rows.length}</span></h2><div class="search-wrap"><span class="search-icon">⌕</span><input class="search" id="clientSearch" type="search" placeholder="Search clients" aria-label="Search clients"></div></div><div id="clientTableArea">${rows.length ? `<div class="table-scroll"><table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Invoices</th><th class="amount">Billed total</th><th></th></tr></thead><tbody>${rows.map((client) => { const invoices = state.invoices.filter((invoice) => invoice.clientId === client.id); const billed = invoices.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0); return `<tr><td><div class="client-card"><span class="client-initial">${escapeHTML(initials(client.name))}</span><span><span class="cell-strong">${escapeHTML(client.name)}</span><span class="cell-sub">${escapeHTML(client.address || "No billing address")}</span></span></div></td><td>${escapeHTML(client.email || "—")}</td><td>${escapeHTML(client.phone || "—")}</td><td>${invoices.length}</td><td class="amount">${currencyFormat(billed)}</td><td><button class="icon-button" type="button" title="Edit client" aria-label="Edit ${escapeHTML(client.name)}" data-edit-client="${escapeHTML(client.id)}">✎</button></td></tr>`; }).join("")}</tbody></table></div>` : emptyMarkup("Your client list is empty", "Add a client to make invoicing quicker next time.", "Add client", "data-new-client")}</div></section>`;
+			bindContentEvents();
+			const search = document.querySelector("#clientSearch");
+			if (search) search.addEventListener("input", () => { const query = search.value.toLowerCase(); document.querySelectorAll("#clientTableArea tbody tr").forEach((row) => { row.hidden = !row.textContent.toLowerCase().includes(query); }); });
+		}
+		function renderSettings() {
+			const business = state.business;
+			content.innerHTML = `${pageHeader("Settings", "Manage your business details and local data.")}<div class="settings-layout"><nav class="settings-nav" aria-label="Settings sections"><button class="active" type="button">Business profile</button><button type="button" data-export>Export backup</button><button type="button" data-import-trigger>Import backup</button><button type="button" data-reset>Reset local data</button></nav><section class="panel settings-panel"><h2>Business profile</h2><p>These details appear on invoices you print or save as PDF.</p><form id="businessForm"><div class="form-grid">
+				<div class="field full"><label for="businessName">Business name</label><input id="businessName" name="name" value="${escapeHTML(business.name)}" maxlength="120" placeholder="Your company or trading name"></div>
+				<div class="field"><label for="businessEmail">Business email</label><input id="businessEmail" name="email" type="email" value="${escapeHTML(business.email)}" placeholder="billing@example.com"></div>
+				<div class="field"><label for="businessPhone">Phone</label><input id="businessPhone" name="phone" value="${escapeHTML(business.phone)}" placeholder="+1 555 0100"></div>
+				<div class="field full"><label for="businessAddress">Business address</label><textarea id="businessAddress" name="address" placeholder="Street, city, postal code, country">${escapeHTML(business.address)}</textarea></div>
+				<div class="field"><label for="businessTaxId">Tax or registration ID</label><input id="businessTaxId" name="taxId" value="${escapeHTML(business.taxId)}" placeholder="Optional"></div>
+				<div class="field"><label for="businessCurrency">Default currency</label><select id="businessCurrency" name="currency">${currencyOptions(business.currency)}</select></div>
+				<div class="field"><label for="businessPrefix">Invoice number prefix</label><input id="businessPrefix" name="prefix" value="${escapeHTML(business.prefix)}" maxlength="10" placeholder="INV"></div>
+				<div class="field"><label>Next invoice number</label><input value="${escapeHTML(String(state.nextNumber))}" disabled></div>
+			</div><div class="settings-actions"><button class="primary" type="submit">Save changes</button></div></form><div style="padding-top:18px;margin-top:21px;border-top:1px solid var(--line)"><p class="field-hint">Your invoices and client details are stored in this browser only. Use Export backup to download a copy before clearing browser data or changing devices.</p><input id="importFile" type="file" accept="application/json,.json" hidden></div></section></div>`;
+			bindContentEvents();
+			document.querySelector("#businessForm").addEventListener("submit", (event) => {
+				event.preventDefault();
+				const form = new FormData(event.currentTarget);
+				state.business = Object.fromEntries(form.entries());
+				state.business.prefix = state.business.prefix.trim() || "INV";
+				persist(); updateProfile(); showToast("Business profile saved."); renderSettings();
+			});
+			document.querySelector("[data-export]").addEventListener("click", exportBackup);
+			document.querySelector("[data-import-trigger]").addEventListener("click", () => document.querySelector("#importFile").click());
+			document.querySelector("#importFile").addEventListener("change", importBackup);
+			document.querySelector("[data-reset]").addEventListener("click", resetData);
+		}
+		function currencyOptions(selected) {
+			return [["USD", "USD · US Dollar"], ["EUR", "EUR · Euro"], ["GBP", "GBP · Pound"], ["CAD", "CAD · Canadian Dollar"], ["AUD", "AUD · Australian Dollar"], ["XOF", "XOF · CFA Franc"], ["NGN", "NGN · Naira"], ["KES", "KES · Kenyan Shilling"]].map(([code, label]) => `<option value="${code}" ${code === selected ? "selected" : ""}>${label}</option>`).join("");
+		}
+		function updateProfile() {
+			const name = state.business.name || "Your business";
+			document.querySelector("#profileName").textContent = name;
+			document.querySelector("#profileAvatar").textContent = initials(name);
+		}
+		function bindContentEvents() {
+			bindDynamicEvents(content);
+		}
+		function bindDynamicEvents(root) {
+			root.querySelectorAll("[data-new-invoice]").forEach((button) => button.addEventListener("click", () => openInvoice()));
+			root.querySelectorAll("[data-new-client]").forEach((button) => button.addEventListener("click", () => openClient()));
+			root.querySelectorAll("[data-go-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.goView)));
+			root.querySelectorAll("[data-edit-invoice]").forEach((element) => element.addEventListener("click", (event) => { if (event.target.closest("button")) return; openInvoice(element.dataset.editInvoice); }));
+			root.querySelectorAll("[data-filter]").forEach((button) => button.addEventListener("click", () => { activeFilter = button.dataset.filter; renderInvoices(); }));
+			root.querySelectorAll("[data-print-invoice]").forEach((button) => button.addEventListener("click", () => printInvoice(button.dataset.printInvoice)));
+			root.querySelectorAll("[data-mark-paid]").forEach((button) => button.addEventListener("click", () => { const invoice = state.invoices.find((item) => item.id === button.dataset.markPaid); if (invoice) { invoice.status = "paid"; invoice.paidAt = todayISO(); persist(); renderView(); showToast(`${invoice.number} marked as paid.`); } }));
+			root.querySelectorAll("[data-edit-client]").forEach((button) => button.addEventListener("click", () => openClient(button.dataset.editClient)));
+		}
+		function openInvoice(id = null) {
+			if (!state.clients.length) {
+				openClient(null, true);
+				showToast("Add a client first. Your invoice will open after saving the client.");
+				return;
+			}
+			editingInvoiceId = id;
+			const invoice = state.invoices.find((item) => item.id === id);
+			document.querySelector("#invoiceDialogTitle").textContent = invoice ? `Edit ${invoice.number}` : "New invoice";
+			document.querySelector("#invoiceNumber").value = invoice?.number || `${state.business.prefix || "INV"}-${String(state.nextNumber).padStart(4, "0")}`;
+			document.querySelector("#invoiceCurrency").value = invoice?.currency || state.business.currency || "USD";
+			document.querySelector("#invoiceDate").value = invoice?.issueDate || todayISO();
+			document.querySelector("#invoiceDue").value = invoice?.dueDate || datePlusDays(14);
+			document.querySelector("#invoiceStatus").value = invoice?.status || "draft";
+			document.querySelector("#invoiceTax").value = invoice?.taxRate ?? 0;
+			document.querySelector("#invoiceDiscount").value = invoice?.discountRate ?? 0;
+			document.querySelector("#invoiceNotes").value = invoice?.notes || "";
+			const select = document.querySelector("#invoiceClient");
+			select.innerHTML = state.clients.map((client) => `<option value="${escapeHTML(client.id)}" ${client.id === invoice?.clientId ? "selected" : ""}>${escapeHTML(client.name)}</option>`).join("") + `<option value="__add__">＋ Add a new client</option>`;
+			const items = invoice?.items?.length ? invoice.items : [{ description: "", quantity: 1, rate: 0 }];
+			document.querySelector("#invoiceItems").innerHTML = items.map(itemMarkup).join("");
+			document.querySelector("#deleteInvoice").hidden = !invoice;
+			document.querySelector("#deleteInvoice").onclick = () => deleteInvoice(id);
+			document.querySelectorAll("[data-save]").forEach((button) => { button.disabled = false; });
+			invoiceOverlay.classList.add("open");
+			document.body.style.overflow = "hidden";
+			bindInvoiceForm();
+			document.querySelector("#invoiceClient").focus();
+		}
+		function itemMarkup(item = {}) {
+			return `<div class="item-row"><input data-item-description maxlength="160" aria-label="Item description" placeholder="Service or product" value="${escapeHTML(item.description || "")}"><input data-item-quantity type="number" aria-label="Quantity" min="0.01" step="0.01" value="${escapeHTML(String(item.quantity ?? 1))}"><input data-item-rate type="number" aria-label="Rate" min="0" step="0.01" value="${escapeHTML(String(item.rate ?? 0))}"><span class="line-total">${currencyFormat((Number(item.quantity) || 0) * (Number(item.rate) || 0), document.querySelector("#invoiceCurrency").value)}</span><button class="item-remove" type="button" aria-label="Remove line item">×</button></div>`;
+		}
+		function bindInvoiceForm() {
+			const items = document.querySelector("#invoiceItems");
+			items.querySelectorAll("input").forEach((input) => input.addEventListener("input", updateInvoiceTotals));
+			items.querySelectorAll(".item-remove").forEach((button) => button.addEventListener("click", () => { if (items.children.length > 1) { button.closest(".item-row").remove(); updateInvoiceTotals(); } else { showToast("An invoice needs at least one line item."); } }));
+			["#invoiceTax", "#invoiceDiscount", "#invoiceCurrency"].forEach((selector) => document.querySelector(selector).addEventListener("input", updateInvoiceTotals));
+			document.querySelector("#invoiceClient").addEventListener("change", (event) => { if (event.target.value === "__add__") { event.target.value = state.clients[0]?.id || ""; openClient(null, true); } });
+			document.querySelector("#addLine").onclick = () => { items.insertAdjacentHTML("beforeend", itemMarkup({ description: "", quantity: 1, rate: 0 })); bindInvoiceForm(); updateInvoiceTotals(); items.lastElementChild.querySelector("input").focus(); };
+			document.querySelectorAll("[data-save]").forEach((button) => button.onclick = () => saveInvoice(button.dataset.save));
+			updateInvoiceTotals();
+		}
+		function readInvoiceItems() {
+			return [...document.querySelectorAll("#invoiceItems .item-row")].map((row) => ({ description: row.querySelector("[data-item-description]").value.trim(), quantity: Number(row.querySelector("[data-item-quantity]").value), rate: Number(row.querySelector("[data-item-rate]").value) })).filter((item) => item.description || item.quantity || item.rate);
+		}
+		function calculateAmounts(items, taxRate, discountRate) {
+			const subtotal = items.reduce((sum, item) => sum + Math.max(0, item.quantity) * Math.max(0, item.rate), 0);
+			const discount = subtotal * Math.min(100, Math.max(0, discountRate)) / 100;
+			const taxable = Math.max(0, subtotal - discount);
+			const tax = taxable * Math.min(100, Math.max(0, taxRate)) / 100;
+			return { subtotal, discount, tax, total: taxable + tax };
+		}
+		function updateInvoiceTotals() {
+			const items = readInvoiceItems();
+			const taxRate = Number(document.querySelector("#invoiceTax").value) || 0;
+			const discountRate = Number(document.querySelector("#invoiceDiscount").value) || 0;
+			const amounts = calculateAmounts(items, taxRate, discountRate);
+			const currency = document.querySelector("#invoiceCurrency").value;
+			document.querySelectorAll("#invoiceItems .item-row").forEach((row) => { row.querySelector(".line-total").textContent = currencyFormat((Number(row.querySelector("[data-item-quantity]").value) || 0) * (Number(row.querySelector("[data-item-rate]").value) || 0), currency); });
+			document.querySelector("#editorSubtotal").textContent = currencyFormat(amounts.subtotal, currency);
+			document.querySelector("#editorDiscount").textContent = `−${currencyFormat(amounts.discount, currency)}`;
+			document.querySelector("#editorDiscountLabel").textContent = `Discount (${discountRate || 0}%)`;
+			document.querySelector("#editorTax").textContent = currencyFormat(amounts.tax, currency);
+			document.querySelector("#editorTaxLabel").textContent = `Tax (${taxRate || 0}%)`;
+			document.querySelector("#editorTotal").textContent = currencyFormat(amounts.total, currency);
+		}
+		function saveInvoice(status) {
+			const form = document.querySelector("#invoiceForm");
+			if (!form.reportValidity()) return;
+			const items = readInvoiceItems();
+			if (!items.length || items.some((item) => !item.description || !(item.quantity > 0) || item.rate < 0 || !Number.isFinite(item.rate))) { showToast("Add a description, positive quantity, and valid rate to each line item."); return; }
+			const clientId = document.querySelector("#invoiceClient").value;
+			const client = state.clients.find((item) => item.id === clientId);
+			if (!client) { showToast("Choose a client before saving."); return; }
+			const taxRate = Number(document.querySelector("#invoiceTax").value) || 0;
+			const discountRate = Number(document.querySelector("#invoiceDiscount").value) || 0;
+			if (taxRate < 0 || taxRate > 100 || discountRate < 0 || discountRate > 100) { showToast("Tax and discount rates must be between 0 and 100%."); return; }
+			const amounts = calculateAmounts(items, taxRate, discountRate);
+			const existing = state.invoices.find((item) => item.id === editingInvoiceId);
+			const invoice = { id: editingInvoiceId || crypto.randomUUID(), number: document.querySelector("#invoiceNumber").value.trim(), clientId, clientSnapshot: { ...client }, currency: document.querySelector("#invoiceCurrency").value, issueDate: document.querySelector("#invoiceDate").value, dueDate: document.querySelector("#invoiceDue").value, status: status === "draft" ? "draft" : document.querySelector("#invoiceStatus").value === "paid" ? "paid" : status, taxRate, discountRate, notes: document.querySelector("#invoiceNotes").value.trim(), items, ...amounts, updatedAt: new Date().toISOString(), createdAt: existing?.createdAt || new Date().toISOString() };
+			if (!invoice.number) { showToast("Enter an invoice number."); return; }
+			if (state.invoices.some((item) => item.number.toLowerCase() === invoice.number.toLowerCase() && item.id !== invoice.id)) { showToast("That invoice number is already in use."); return; }
+			if (existing) state.invoices = state.invoices.map((item) => item.id === editingInvoiceId ? invoice : item);
+			else { state.invoices.push(invoice); state.nextNumber += 1; }
+			if (!persist()) return;
+			closeInvoice();
+			showToast(`${invoice.number} saved as ${invoice.status}.`);
+			renderView();
+		}
+		function closeInvoice() { invoiceOverlay.classList.remove("open"); document.body.style.overflow = ""; }
+		function deleteInvoice(id) {
+			const invoice = state.invoices.find((item) => item.id === id);
+			if (!invoice || !confirm(`Delete ${invoice.number}? This cannot be undone.`)) return;
+			state.invoices = state.invoices.filter((item) => item.id !== id);
+			persist(); closeInvoice(); renderView(); showToast(`${invoice.number} deleted.`);
+		}
+		let afterClientSave = false;
+		let editingClientId = null;
+		function openClient(id = null, continueToInvoice = false) {
+			editingClientId = id;
+			afterClientSave = continueToInvoice;
+			const client = state.clients.find((item) => item.id === id);
+			document.querySelector("#clientDialogTitle").textContent = client ? "Edit client" : "Add client";
+			document.querySelector("#clientName").value = client?.name || "";
+			document.querySelector("#clientEmail").value = client?.email || "";
+			document.querySelector("#clientPhone").value = client?.phone || "";
+			document.querySelector("#clientAddress").value = client?.address || "";
+			clientOverlay.classList.add("open");
+			document.body.style.overflow = "hidden";
+			document.querySelector("#clientName").focus();
+		}
+		function closeClient() { clientOverlay.classList.remove("open"); document.body.style.overflow = ""; }
+		function saveClient() {
+			const form = document.querySelector("#clientForm");
+			if (!form.reportValidity()) return;
+			const existing = state.clients.find((item) => item.id === editingClientId);
+			const client = { id: editingClientId || crypto.randomUUID(), name: document.querySelector("#clientName").value.trim(), email: document.querySelector("#clientEmail").value.trim(), phone: document.querySelector("#clientPhone").value.trim(), address: document.querySelector("#clientAddress").value.trim(), createdAt: existing?.createdAt || new Date().toISOString() };
+			if (existing) state.clients = state.clients.map((item) => item.id === editingClientId ? client : item);
+			else state.clients.push(client);
+			state.invoices = state.invoices.map((invoice) => invoice.clientId === client.id ? { ...invoice, clientSnapshot: { ...client } } : invoice);
+			if (!persist()) return;
+			closeClient();
+			showToast(existing ? "Client updated." : "Client saved.");
+			if (afterClientSave) { afterClientSave = false; openInvoice(); }
+			else renderView();
+		}
+		function printInvoice(id) {
+			const invoice = state.invoices.find((item) => item.id === id);
+			if (!invoice) return;
+			const client = currentClient(invoice);
+			const business = state.business;
+			const money = (value) => currencyFormat(value, invoice.currency);
+			const items = invoice.items.map((item) => `<tr><td>${escapeHTML(item.description)}</td><td class="print-right">${Number(item.quantity).toLocaleString()}</td><td class="print-right">${money(item.rate)}</td><td class="print-right">${money(item.quantity * item.rate)}</td></tr>`).join("");
+			document.querySelector("#printSheet").innerHTML = `<div class="print-head"><div><div class="print-brand">${escapeHTML(business.name || "Your business")}</div><div class="print-party-lines">${escapeHTML([business.email, business.phone, business.address, business.taxId ? `Tax ID: ${business.taxId}` : ""].filter(Boolean).join("\n"))}</div></div><div><div class="print-invoice-title">Invoice</div><div class="print-invoice-number">${escapeHTML(invoice.number)}</div></div></div><div class="print-parties"><div><div class="print-label">Bill to</div><div class="print-party-name">${escapeHTML(client.name || "Client")}</div><div class="print-party-lines">${escapeHTML([client.email, client.phone, client.address].filter(Boolean).join("\n"))}</div></div><div><div class="print-label">Invoice details</div><div class="print-meta"><strong>Issue date</strong> &nbsp; ${displayDate(invoice.issueDate)}<br><strong>Due date</strong> &nbsp; ${displayDate(invoice.dueDate)}<br><strong>Status</strong> &nbsp; ${escapeHTML(invoiceStatus(invoice))}</div></div></div><table class="print-table"><thead><tr><th>Description</th><th class="print-right">Qty</th><th class="print-right">Rate</th><th class="print-right">Amount</th></tr></thead><tbody>${items}</tbody></table><div class="print-bottom"><div><div class="print-label">Notes</div><div class="print-notes">${escapeHTML(invoice.notes || "Thank you for your business.")}</div></div><div class="print-totals"><div><span>Subtotal</span><strong>${money(invoice.subtotal)}</strong></div>${invoice.discount ? `<div><span>Discount (${invoice.discountRate}%)</span><strong>−${money(invoice.discount)}</strong></div>` : ""}${invoice.tax ? `<div><span>Tax (${invoice.taxRate}%)</span><strong>${money(invoice.tax)}</strong></div>` : ""}<div class="print-grand"><span>Total due</span><strong>${money(invoice.total)}</strong></div></div></div><div class="print-thanks">Please make payment by ${displayDate(invoice.dueDate)}. Thank you for your business.</div>`;
+			window.print();
+		}
+		function exportBackup() {
+			const blob = new Blob([JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" });
+			const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `ledgerline-backup-${todayISO()}.json`; link.click(); URL.revokeObjectURL(link.href); showToast("Backup downloaded.");
+		}
+		function importBackup(event) {
+			const file = event.target.files[0]; if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				try {
+					const imported = JSON.parse(reader.result);
+					if (!Array.isArray(imported.clients) || !Array.isArray(imported.invoices) || !imported.business) throw new Error("Invalid backup");
+					if (!confirm(`Import ${imported.invoices.length} invoices and ${imported.clients.length} clients? This replaces the current local data.`)) return;
+					state = { ...defaultState, ...imported, business: { ...defaultState.business, ...imported.business } };
+					persist(); updateProfile(); renderSettings(); showToast("Backup imported.");
+				} catch { showToast("That file is not a valid Ledgerline backup."); }
+				finally { event.target.value = ""; }
+			};
+			reader.readAsText(file);
+		}
+		function resetData() {
+			if (!confirm("Reset all invoices, clients, and settings stored in this browser? This cannot be undone.")) return;
+			state = structuredClone(defaultState); persist(); updateProfile(); renderSettings(); showToast("Local data reset.");
+		}
+		document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+		document.querySelectorAll("[data-go-settings]").forEach((button) => button.addEventListener("click", () => setView("settings")));
+		document.querySelectorAll("[data-close-invoice]").forEach((button) => button.addEventListener("click", closeInvoice));
+		document.querySelectorAll("[data-close-client]").forEach((button) => button.addEventListener("click", closeClient));
+		document.querySelector("#saveClient").addEventListener("click", saveClient);
+		document.querySelector("#clientForm").addEventListener("submit", (event) => { event.preventDefault(); saveClient(); });
+		invoiceOverlay.addEventListener("click", (event) => { if (event.target === invoiceOverlay) closeInvoice(); });
+		clientOverlay.addEventListener("click", (event) => { if (event.target === clientOverlay) closeClient(); });
+		document.addEventListener("keydown", (event) => { if (event.key === "Escape") { if (clientOverlay.classList.contains("open")) closeClient(); else if (invoiceOverlay.classList.contains("open")) closeInvoice(); } });
+		document.querySelector("#today").textContent = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(new Date());
+		updateProfile();
+		renderView();
+	</script>
+</body>
+</html>
