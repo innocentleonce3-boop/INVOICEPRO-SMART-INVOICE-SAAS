@@ -48,8 +48,7 @@ public sealed class InvoiceCalculator
                 ? taxableBase - (taxableBase / (1m + (item.TaxRate / 100m)))
                 : taxableBase * (item.TaxRate / 100m);
 
-            var lineTotal = taxableBase + lineTax;
-            subtotal += RoundMoney(lineTotal);
+            subtotal += RoundMoney(taxableBase);
             taxTotal += RoundMoney(lineTax);
         }
 

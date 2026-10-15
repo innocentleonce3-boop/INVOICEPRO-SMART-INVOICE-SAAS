@@ -9,7 +9,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<InvoiceProDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")
-        ?? "Server=localhost,1433;Database=InvoicePro;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"));
+        ?? throw new InvalidOperationException("Connection string 'Default' is not configured.")));
 
 builder.Services.AddScoped<InvoiceCalculator>();
 

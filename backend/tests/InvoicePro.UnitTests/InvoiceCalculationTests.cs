@@ -1,5 +1,6 @@
 using InvoicePro.Application.Services;
 using InvoicePro.Domain.Models;
+using Xunit;
 
 namespace InvoicePro.UnitTests;
 

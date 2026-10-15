@@ -5,7 +5,7 @@ services:
     container_name: invoicepro-db
     environment:
       ACCEPT_EULA: 'Y'
-      MSSQL_SA_PASSWORD: 'YourStrong!Passw0rd'
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
     ports:
       - '1433:1433'
     volumes:
@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Default: Server=db,1433;Database=InvoicePro;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+      ConnectionStrings__Default: Server=db,1433;Database=InvoicePro;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};TrustServerCertificate=True
     depends_on:
       - db
     ports:
@@ -28,7 +28,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - '5173:5173'
+      - '5173:80'
     depends_on:
       - api
 

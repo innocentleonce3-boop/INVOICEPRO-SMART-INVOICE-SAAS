@@ -21,7 +21,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
